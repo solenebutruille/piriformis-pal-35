@@ -14,7 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      custom_exercises: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      daily_logs: {
+        Row: {
+          created_at: string
+          date: string
+          exercises: string[]
+          id: string
+          least_pain: number
+          max_pain: number
+          sleep_quality: number
+          updated_at: string
+          walking_minutes: number
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          exercises?: string[]
+          id?: string
+          least_pain?: number
+          max_pain?: number
+          sleep_quality?: number
+          updated_at?: string
+          walking_minutes?: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          exercises?: string[]
+          id?: string
+          least_pain?: number
+          max_pain?: number
+          sleep_quality?: number
+          updated_at?: string
+          walking_minutes?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
