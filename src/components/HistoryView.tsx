@@ -20,10 +20,24 @@ const sleepEmoji = ["😫", "😕", "😐", "😊", "😴"];
 
 export default function HistoryView({ refreshKey }: { refreshKey: number }) {
   const [logs, setLogs] = useState<DailyLog[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLogs(getAllLogs());
+    async function load() {
+      setLoading(true);
+      setLogs(await getAllLogs());
+      setLoading(false);
+    }
+    load();
   }, [refreshKey]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16 text-muted-foreground">
+        Loading...
+      </div>
+    );
+  }
 
   if (logs.length === 0) {
     return (
