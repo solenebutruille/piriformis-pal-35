@@ -31,17 +31,26 @@ export default function DailyLogForm({ onSaved }: { onSaved?: () => void }) {
   const [newExercise, setNewExercise] = useState("");
   const [walkingMinutes, setWalkingMinutes] = useState(0);
   const [sleepQuality, setSleepQuality] = useState(3);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setExercises(getAllExercises());
-    const existing = getLogForDate(today);
-    if (existing) {
-      setMaxPain(existing.maxPain);
-      setLeastPain(existing.leastPain);
-      setSelectedExercises(existing.exercises);
-      setWalkingMinutes(existing.walkingMinutes);
-      setSleepQuality(existing.sleepQuality);
+    async function load() {
+      setLoading(true);
+      const [allEx, existing] = await Promise.all([
+        getAllExercises(),
+        getLogForDate(today),
+      ]);
+      setExercises(allEx);
+      if (existing) {
+        setMaxPain(existing.maxPain);
+        setLeastPain(existing.leastPain);
+        setSelectedExercises(existing.exercises);
+        setWalkingMinutes(existing.walkingMinutes);
+        setSleepQuality(existing.sleepQuality);
+      }
+      setLoading(false);
     }
+    load();
   }, [today]);
 
   const toggleExercise = (name: string) => {
@@ -50,15 +59,15 @@ export default function DailyLogForm({ onSaved }: { onSaved?: () => void }) {
     );
   };
 
-  const handleAddExercise = () => {
+  const handleAddExercise = async () => {
     const trimmed = newExercise.trim();
     if (!trimmed) return;
-    addCustomExercise(trimmed);
-    setExercises(getAllExercises());
+    await addCustomExercise(trimmed);
+    setExercises(await getAllExercises());
     setNewExercise("");
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const log: DailyLog = {
       date: today,
       maxPain,
@@ -67,12 +76,20 @@ export default function DailyLogForm({ onSaved }: { onSaved?: () => void }) {
       walkingMinutes,
       sleepQuality,
     };
-    saveLog(log);
+    await saveLog(log);
     toast.success("Today's log saved!");
     onSaved?.();
   };
 
   const sleepLabels = ["Very Poor", "Poor", "Okay", "Good", "Excellent"];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16 text-muted-foreground">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
