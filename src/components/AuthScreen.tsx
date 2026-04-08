@@ -93,11 +93,17 @@ export default function AuthScreen() {
       if (emailMode === "signin") {
         await signInWithEmail(trimmed, password);
       } else {
-        const { needsEmailConfirmation } = await signUpWithEmail(trimmed, password);
+        const { needsEmailConfirmation } = await signUpWithEmail(
+          trimmed,
+          password,
+        );
         if (needsEmailConfirmation) {
-          toast.success("Check your email for a confirmation link to finish signing up.", {
-            duration: 12_000,
-          });
+          toast.success(
+            "Check your email for a confirmation link to finish signing up.",
+            {
+              duration: 12_000,
+            },
+          );
           setPassword("");
         } else {
           toast.success("Account created — you’re signed in.");
@@ -199,7 +205,9 @@ export default function AuthScreen() {
                 <Input
                   id="auth-password"
                   type="password"
-                  autoComplete={emailMode === "signin" ? "current-password" : "new-password"}
+                  autoComplete={
+                    emailMode === "signin" ? "current-password" : "new-password"
+                  }
                   placeholder="••••••••"
                   value={password}
                   onChange={(ev) => setPassword(ev.target.value)}
@@ -208,21 +216,21 @@ export default function AuthScreen() {
                 />
               </div>
 
-              <Button type="submit" className="w-full h-11 gap-2 font-medium" disabled={anyBusy}>
+              <Button
+                type="submit"
+                className="w-full h-11 gap-2 font-medium"
+                disabled={anyBusy}
+              >
                 {emailBusy ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Mail className="h-4 w-4" />
                 )}
-                {emailMode === "signin" ? "Sign in with email" : "Create account with email"}
+                {emailMode === "signin"
+                  ? "Sign in with email"
+                  : "Create account with email"}
               </Button>
             </form>
-
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Enable the Email provider in Supabase (Authentication → Providers → Email). If
-              “Confirm email” is on, new accounts must open the link in their inbox before signing
-              in.
-            </p>
           </CardContent>
         </Card>
       </div>
