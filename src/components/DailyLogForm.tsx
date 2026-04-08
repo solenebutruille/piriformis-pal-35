@@ -3,9 +3,10 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Save, Star } from "lucide-react";
+import { Plus, Save, Star, Trophy } from "lucide-react";
 import {
   DailyLog,
   getAllExercises,
@@ -22,8 +23,26 @@ function painColor(value: number, max: number) {
   return "text-pain-high";
 }
 
-export default function DailyLogForm({ onSaved }: { onSaved?: () => void }) {
+/** 1–10 day score: higher is better (inverse of pain coloring). */
+function overallDayColor(score: number) {
+  const ratio = (score - 1) / 9;
+  if (ratio >= 0.67) return "text-pain-low";
+  if (ratio >= 0.33) return "text-pain-mid";
+  return "text-pain-high";
+}
+
+type DailyLogFormProps = {
+  onSaved?: () => void;
+  /** YYYY-MM-DD; defaults to today (Today tab). */
+  forDate?: string;
+  /** When this changes (e.g. global save counter), the form reloads from the server. */
+  reloadToken?: number;
+};
+
+export default function DailyLogForm({ onSaved, forDate, reloadToken }: DailyLogFormProps) {
   const today = todayString();
+  const dateKey = forDate ?? today;
+  const isToday = dateKey === today;
   const [maxPain, setMaxPain] = useState(0);
   const [leastPain, setLeastPain] = useState(0);
   const [exercises, setExercises] = useState<string[]>([]);
@@ -31,6 +50,8 @@ export default function DailyLogForm({ onSaved }: { onSaved?: () => void }) {
   const [newExercise, setNewExercise] = useState("");
   const [walkingMinutes, setWalkingMinutes] = useState(0);
   const [sleepQuality, setSleepQuality] = useState(3);
+  const [overallDayScore, setOverallDayScore] = useState(5);
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,7 +59,7 @@ export default function DailyLogForm({ onSaved }: { onSaved?: () => void }) {
       setLoading(true);
       const [allEx, existing] = await Promise.all([
         getAllExercises(),
-        getLogForDate(today),
+        getLogForDate(dateKey),
       ]);
       setExercises(allEx);
       if (existing) {
@@ -47,11 +68,21 @@ export default function DailyLogForm({ onSaved }: { onSaved?: () => void }) {
         setSelectedExercises(existing.exercises);
         setWalkingMinutes(existing.walkingMinutes);
         setSleepQuality(existing.sleepQuality);
+        setOverallDayScore(existing.overallDayScore);
+        setNotes(existing.notes);
+      } else {
+        setMaxPain(0);
+        setLeastPain(0);
+        setSelectedExercises([]);
+        setWalkingMinutes(0);
+        setSleepQuality(3);
+        setOverallDayScore(5);
+        setNotes("");
       }
       setLoading(false);
     }
     load();
-  }, [today]);
+  }, [dateKey, reloadToken]);
 
   const toggleExercise = (name: string) => {
     setSelectedExercises((prev) =>
@@ -62,23 +93,33 @@ export default function DailyLogForm({ onSaved }: { onSaved?: () => void }) {
   const handleAddExercise = async () => {
     const trimmed = newExercise.trim();
     if (!trimmed) return;
-    await addCustomExercise(trimmed);
-    setExercises(await getAllExercises());
-    setNewExercise("");
+    try {
+      await addCustomExercise(trimmed);
+      setExercises(await getAllExercises());
+      setNewExercise("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save exercise");
+    }
   };
 
   const handleSave = async () => {
     const log: DailyLog = {
-      date: today,
+      date: dateKey,
       maxPain,
       leastPain,
       exercises: selectedExercises,
       walkingMinutes,
       sleepQuality,
+      overallDayScore,
+      notes,
     };
-    await saveLog(log);
-    toast.success("Today's log saved!");
-    onSaved?.();
+    try {
+      await saveLog(log);
+      toast.success(isToday ? "Today's log saved!" : "Log saved!");
+      onSaved?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save log");
+    }
   };
 
   const sleepLabels = ["Very Poor", "Poor", "Okay", "Good", "Excellent"];
@@ -95,6 +136,36 @@ export default function DailyLogForm({ onSaved }: { onSaved?: () => void }) {
     <div className="space-y-5">
       <Card>
         <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-heading flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-primary" />
+            Overall day score
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            {isToday
+              ? "How did today feel overall? (not only pain — mood, energy, life stuff.)"
+              : "How did that day feel overall? (not only pain — mood, energy, life stuff.)"}
+          </p>
+          <div className="flex justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Score</span>
+            <span className={`text-lg font-bold ${overallDayColor(overallDayScore)}`}>
+              {overallDayScore}/10
+            </span>
+          </div>
+          <Slider
+            value={[overallDayScore]}
+            onValueChange={([v]) => setOverallDayScore(v)}
+            min={1}
+            max={10}
+            step={1}
+            className="w-full"
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg font-heading">Pain Levels</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -108,9 +179,9 @@ export default function DailyLogForm({ onSaved }: { onSaved?: () => void }) {
           <div>
             <div className="flex justify-between mb-2">
               <span className="text-sm font-medium text-muted-foreground">Least pain experienced</span>
-              <span className={`text-lg font-bold ${painColor(leastPain, 20)}`}>{leastPain}/20</span>
+              <span className={`text-lg font-bold ${painColor(leastPain, 10)}`}>{leastPain}/10</span>
             </div>
-            <Slider value={[leastPain]} onValueChange={([v]) => setLeastPain(v)} max={20} step={1} className="w-full" />
+            <Slider value={[leastPain]} onValueChange={([v]) => setLeastPain(v)} max={10} step={1} className="w-full" />
           </div>
         </CardContent>
       </Card>
@@ -187,9 +258,29 @@ export default function DailyLogForm({ onSaved }: { onSaved?: () => void }) {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-heading">Comment</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            placeholder={
+              isToday
+                ? "Anything you want to remember about today (optional)…"
+                : "Anything you want to remember about this day (optional)…"
+            }
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="min-h-[100px] resize-y bg-background"
+            maxLength={2000}
+          />
+          <p className="text-xs text-muted-foreground mt-2">{notes.length}/2000</p>
+        </CardContent>
+      </Card>
+
       <Button onClick={handleSave} className="w-full h-12 text-base font-semibold gap-2">
         <Save className="h-5 w-5" />
-        Save Today's Log
+        {isToday ? "Save Today's Log" : "Save changes"}
       </Button>
     </div>
   );

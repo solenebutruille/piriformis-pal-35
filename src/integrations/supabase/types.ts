@@ -19,16 +19,19 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          user_id?: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -40,8 +43,11 @@ export type Database = {
           id: string
           least_pain: number
           max_pain: number
+          notes: string | null
+          overall_day_score: number
           sleep_quality: number
           updated_at: string
+          user_id: string
           walking_minutes: number
         }
         Insert: {
@@ -51,8 +57,11 @@ export type Database = {
           id?: string
           least_pain?: number
           max_pain?: number
+          notes?: string | null
+          overall_day_score?: number
           sleep_quality?: number
           updated_at?: string
+          user_id?: string
           walking_minutes?: number
         }
         Update: {
@@ -62,8 +71,11 @@ export type Database = {
           id?: string
           least_pain?: number
           max_pain?: number
+          notes?: string | null
+          overall_day_score?: number
           sleep_quality?: number
           updated_at?: string
+          user_id?: string
           walking_minutes?: number
         }
         Relationships: []
