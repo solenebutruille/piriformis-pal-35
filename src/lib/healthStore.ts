@@ -20,7 +20,7 @@ export interface DailyLog {
   notes: string; // optional free-text; stored as null when empty
 }
 
-export const DEFAULT_EXERCISES = ["Swimming", "Gym"];
+export const DEFAULT_EXERCISES = ["Swimming", "Abductor"];
 
 export async function getCustomExercises(): Promise<string[]> {
   const { data: userData } = await supabase.auth.getUser();
@@ -41,10 +41,9 @@ export async function getAllExercises(): Promise<string[]> {
 export async function addCustomExercise(name: string): Promise<void> {
   if (DEFAULT_EXERCISES.includes(name)) return;
   const userId = await requireUserId();
-  const { error } = await supabase.from("custom_exercises").upsert(
-    { user_id: userId, name },
-    { onConflict: "user_id,name" }
-  );
+  const { error } = await supabase
+    .from("custom_exercises")
+    .upsert({ user_id: userId, name }, { onConflict: "user_id,name" });
   if (error) throw error;
 }
 
@@ -70,7 +69,9 @@ export async function getAllLogs(): Promise<DailyLog[]> {
   );
 }
 
-export async function getLogForDate(date: string): Promise<DailyLog | undefined> {
+export async function getLogForDate(
+  date: string,
+): Promise<DailyLog | undefined> {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return undefined;
 
