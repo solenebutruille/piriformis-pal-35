@@ -12,8 +12,26 @@ export default {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      heading: ['Outfit', 'sans-serif'],
+      body: ['Inter', 'sans-serif'],
+    },
     extend: {
       colors: {
+        sage: {
+          deep: "hsl(var(--sage-deep))",
+          medium: "hsl(var(--sage-medium))",
+          light: "hsl(var(--sage-light))",
+        },
+        cream: {
+          DEFAULT: "hsl(var(--cream))",
+          dark: "hsl(var(--cream-dark))",
+        },
+        pain: {
+          low: "hsl(var(--pain-low))",
+          mid: "hsl(var(--pain-mid))",
+          high: "hsl(var(--pain-high))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
