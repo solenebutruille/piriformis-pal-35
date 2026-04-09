@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -10,16 +11,21 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import DailyLogForm from "@/components/DailyLogForm";
-import { DailyLog, getAllLogs } from "@/lib/healthStore";
+import { DailyLog, getAllLogs, todayString } from "@/lib/healthStore";
 import {
   Activity,
+  CalendarPlus,
+  Check,
+  Dumbbell,
   Footprints,
   MessageSquare,
   Moon,
   Pencil,
+  Armchair,
   TrendingDown,
   TrendingUp,
-  Trophy,
+  Minus,
+  X,
 } from "lucide-react";
 
 function painBadgeVariant(value: number, max: number) {
@@ -29,18 +35,19 @@ function painBadgeVariant(value: number, max: number) {
   return "destructive" as const;
 }
 
-function dayScoreBadgeVariant(score: number) {
-  if (score >= 8) return "default" as const;
-  if (score >= 5) return "secondary" as const;
-  return "destructive" as const;
-}
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-const sleepEmoji = ["😫", "😕", "😐", "😊", "😴"];
+const sleepEmoji = ["😫", "😩", "😕", "😟", "😐", "🙂", "😊", "😌", "😴", "🌟"];
+
+function yesterday(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
 
 export default function HistoryView({
   refreshKey,
@@ -52,6 +59,8 @@ export default function HistoryView({
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pendingDate, setPendingDate] = useState(yesterday);
 
   useEffect(() => {
     async function load() {
@@ -61,6 +70,17 @@ export default function HistoryView({
     }
     load();
   }, [refreshKey]);
+
+  function openAddDate() {
+    setPendingDate(yesterday());
+    setShowDatePicker(true);
+  }
+
+  function confirmAddDate() {
+    if (!pendingDate) return;
+    setShowDatePicker(false);
+    setEditingDate(pendingDate);
+  }
 
   if (loading) {
     return (
@@ -72,23 +92,114 @@ export default function HistoryView({
 
   if (logs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-        <Activity className="h-12 w-12 mb-3 opacity-40" />
-        <p className="text-lg font-medium">No logs yet</p>
-        <p className="text-sm">Start by filling in today's log!</p>
+      <div className="flex flex-col items-center justify-center py-16 gap-4 text-muted-foreground">
+        <div className="flex flex-col items-center">
+          <Activity className="h-12 w-12 mb-3 opacity-40" />
+          <p className="text-lg font-medium">No logs yet</p>
+          <p className="text-sm">Start by filling in today's log!</p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2" onClick={openAddDate}>
+          <CalendarPlus className="h-4 w-4" />
+          Add a past date
+        </Button>
+        <Sheet open={editingDate !== null} onOpenChange={(open) => !open && setEditingDate(null)}>
+          <SheetContent
+            side="bottom"
+            className="max-h-[92vh] overflow-y-auto rounded-t-2xl px-4 pb-8 pt-6 sm:max-w-lg sm:mx-auto"
+          >
+            <SheetHeader className="text-left space-y-1 pr-10">
+              <SheetTitle className="font-heading">Log a past day</SheetTitle>
+              {editingDate && (
+                <SheetDescription>
+                  {formatDate(editingDate)} · {editingDate}
+                </SheetDescription>
+              )}
+            </SheetHeader>
+            <div className="mt-4">
+              {editingDate && (
+                <DailyLogForm
+                  key={editingDate}
+                  forDate={editingDate}
+                  onSaved={() => {
+                    onLogSaved?.();
+                    setEditingDate(null);
+                  }}
+                />
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+        {showDatePicker && (
+          <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setShowDatePicker(false)}>
+            <div className="bg-background rounded-t-2xl sm:rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <p className="font-heading font-semibold text-base">Add a past date</p>
+              <Input
+                type="date"
+                value={pendingDate}
+                max={yesterday()}
+                onChange={(e) => setPendingDate(e.target.value)}
+                className="bg-background"
+              />
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 gap-1.5" onClick={() => setShowDatePicker(false)}>
+                  <X className="h-4 w-4" />
+                  Cancel
+                </Button>
+                <Button className="flex-1 gap-1.5" onClick={confirmAddDate} disabled={!pendingDate || pendingDate >= todayString()}>
+                  <Check className="h-4 w-4" />
+                  Log this day
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" className="gap-2" onClick={openAddDate}>
+          <CalendarPlus className="h-4 w-4" />
+          Add a past date
+        </Button>
+      </div>
+
+      {showDatePicker && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setShowDatePicker(false)}>
+          <div className="bg-background rounded-t-2xl sm:rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <p className="font-heading font-semibold text-base">Add a past date</p>
+            <Input
+              type="date"
+              value={pendingDate}
+              max={yesterday()}
+              onChange={(e) => setPendingDate(e.target.value)}
+              className="bg-background"
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 gap-1.5" onClick={() => setShowDatePicker(false)}>
+                <X className="h-4 w-4" />
+                Cancel
+              </Button>
+              <Button className="flex-1 gap-1.5" onClick={confirmAddDate} disabled={!pendingDate || pendingDate >= todayString()}>
+                <Check className="h-4 w-4" />
+                Log this day
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Sheet open={editingDate !== null} onOpenChange={(open) => !open && setEditingDate(null)}>
         <SheetContent
           side="bottom"
           className="max-h-[92vh] overflow-y-auto rounded-t-2xl px-4 pb-8 pt-6 sm:max-w-lg sm:mx-auto"
         >
           <SheetHeader className="text-left space-y-1 pr-10">
-            <SheetTitle className="font-heading">Edit log</SheetTitle>
+            <SheetTitle className="font-heading">
+              {editingDate && logs.some((l) => l.date === editingDate) ? "Edit log" : "Log a past day"}
+            </SheetTitle>
             {editingDate && (
               <SheetDescription>
                 {formatDate(editingDate)} · {editingDate}
@@ -130,64 +241,72 @@ export default function HistoryView({
               </Button>
             </div>
 
-            <div className="flex items-center gap-2 bg-primary/10 rounded-lg p-2.5 mb-3">
-              <Trophy className="h-4 w-4 text-primary shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-muted-foreground">Overall day</p>
-                <Badge variant={dayScoreBadgeVariant(log.overallDayScore)} className="text-xs mt-0.5">
-                  {log.overallDayScore}/10
-                </Badge>
+            {/* Pain */}
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2.5 gap-1">
+                <TrendingUp className="h-3.5 w-3.5 text-pain-high" />
+                <p className="text-xs text-muted-foreground">Max</p>
+                <Badge variant={painBadgeVariant(log.maxPain, 10)} className="text-xs">{log.maxPain}/10</Badge>
+              </div>
+              <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2.5 gap-1">
+                <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">Avg</p>
+                <Badge variant={painBadgeVariant(log.averagePain, 10)} className="text-xs">{log.averagePain}/10</Badge>
+              </div>
+              <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2.5 gap-1">
+                <TrendingDown className="h-3.5 w-3.5 text-pain-low" />
+                <p className="text-xs text-muted-foreground">Least</p>
+                <Badge variant={painBadgeVariant(log.leastPain, 10)} className="text-xs">{log.leastPain}/10</Badge>
               </div>
             </div>
 
-            <div className="flex gap-2.5 rounded-lg border border-border/60 bg-muted/30 p-3 mb-3">
-              <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Comment</p>
-                {log.notes.trim() !== "" ? (
-                  <p className="text-sm text-foreground whitespace-pre-wrap break-words">{log.notes.trim()}</p>
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">No comment for this day.</p>
-                )}
+            {/* Intensity & sleep */}
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2.5 gap-1">
+                <Moon className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">Sleep</p>
+                <span className="text-xs font-semibold">{sleepEmoji[log.sleepQuality - 1] ?? "😐"} {log.sleepQuality}/10</span>
+              </div>
+              <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2.5 gap-1">
+                <Dumbbell className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">Exercise</p>
+                <span className="text-xs font-semibold">{log.exerciseIntensity}/10</span>
+              </div>
+              <div className="flex flex-col items-center bg-muted/50 rounded-lg p-2.5 gap-1">
+                <Armchair className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">Sitting</p>
+                <span className="text-xs font-semibold">{log.sittingIntensity}/10</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2.5">
-                <TrendingUp className="h-4 w-4 text-pain-high shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Max pain</p>
-                  <Badge variant={painBadgeVariant(log.maxPain, 10)} className="text-xs">
-                    {log.maxPain}/10
-                  </Badge>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2.5">
-                <TrendingDown className="h-4 w-4 text-pain-low shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Least pain</p>
-                  <Badge variant={painBadgeVariant(log.leastPain, 10)} className="text-xs">
-                    {log.leastPain}/10
-                  </Badge>
-                </div>
-              </div>
+            {/* Activity */}
+            <div className="flex flex-wrap items-center gap-3 text-sm mb-3">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <Footprints className="h-3.5 w-3.5" />
+                {log.walkingMinutes} min walk
+              </span>
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <Armchair className="h-3.5 w-3.5" />
+                {log.maxSittingMinutes} min max sit
+              </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <Footprints className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{log.walkingMinutes} min walk</span>
-              <span className="text-muted-foreground">·</span>
-              <Moon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{sleepEmoji[log.sleepQuality - 1]} Sleep</span>
-            </div>
-
+            {/* Exercises */}
             {log.exercises.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 mb-3">
                 {log.exercises.map((ex) => (
                   <Badge key={ex} variant="outline" className="text-xs font-normal">
                     {ex}
                   </Badge>
                 ))}
+              </div>
+            )}
+
+            {/* Notes */}
+            {log.notes.trim() !== "" && (
+              <div className="flex gap-2.5 rounded-lg border border-border/60 bg-muted/30 p-3">
+                <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                <p className="text-sm text-foreground whitespace-pre-wrap break-words">{log.notes.trim()}</p>
               </div>
             )}
           </CardContent>

@@ -31,43 +31,28 @@ function shortLabel(dateStr: string) {
 type Point = {
   date: string;
   label: string;
-  maxPain: number;
-  leastPain: number;
-  overallDayScore: number;
-  walkingMinutes: number;
+  averagePain: number;
   sleepQuality: number;
-  exerciseCount: number;
+  sittingIntensity: number;
+  exerciseIntensity: number;
 };
 
 function toChartData(logs: DailyLog[]): Point[] {
   return logs.map((l) => ({
     date: l.date,
     label: shortLabel(l.date),
-    maxPain: l.maxPain,
-    leastPain: l.leastPain,
-    overallDayScore: l.overallDayScore,
-    walkingMinutes: l.walkingMinutes,
+    averagePain: l.averagePain,
     sleepQuality: l.sleepQuality,
-    exerciseCount: l.exercises.length,
+    sittingIntensity: l.sittingIntensity,
+    exerciseIntensity: l.exerciseIntensity,
   }));
 }
 
-const painChartConfig = {
-  maxPain: { label: "Max pain", color: "hsl(var(--pain-high))" },
-  leastPain: { label: "Least pain", color: "hsl(var(--pain-low))" },
-};
-
-const scoreChartConfig = {
-  overallDayScore: { label: "Day score", color: "hsl(var(--primary))" },
-};
-
-const walkChartConfig = {
-  walkingMinutes: { label: "Walking (min)", color: "hsl(var(--sage-medium))" },
-};
-
-const sleepExerciseChartConfig = {
-  sleepQuality: { label: "Sleep (1–5)", color: "hsl(var(--accent))" },
-  exerciseCount: { label: "Exercises logged", color: "hsl(var(--sage-deep))" },
+const chartConfig = {
+  averagePain:       { label: "Avg pain",            color: "hsl(var(--pain-high))" },
+  sleepQuality:      { label: "Sleep",                color: "hsl(var(--accent))" },
+  sittingIntensity:  { label: "Sitting intensity",    color: "hsl(var(--pain-mid))" },
+  exerciseIntensity: { label: "Exercise intensity",   color: "hsl(var(--pain-low))" },
 };
 
 export default function InsightsView({ refreshKey }: { refreshKey: number }) {
@@ -147,134 +132,26 @@ export default function InsightsView({ refreshKey }: { refreshKey: number }) {
           <p className="text-xs mt-1">Try &quot;All time&quot; or log more days.</p>
         </div>
       ) : (
-        <>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-heading">Pain</CardTitle>
-              <CardDescription>Max and least pain per day (0–10).</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <ChartContainer config={painChartConfig} className="h-[220px] w-full aspect-auto">
-                <LineChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" />
-                  <YAxis domain={[0, 10]} width={28} tickLine={false} axisLine={false} tickMargin={4} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line
-                    type="monotone"
-                    dataKey="maxPain"
-                    stroke="var(--color-maxPain)"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    connectNulls
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="leastPain"
-                    stroke="var(--color-leastPain)"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    connectNulls
-                  />
-                </LineChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-heading">Overall day score</CardTitle>
-              <CardDescription>How each day felt overall (1–10).</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <ChartContainer config={scoreChartConfig} className="h-[200px] w-full aspect-auto">
-                <LineChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" />
-                  <YAxis domain={[1, 10]} width={28} tickLine={false} axisLine={false} tickMargin={4} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line
-                    type="monotone"
-                    dataKey="overallDayScore"
-                    stroke="var(--color-overallDayScore)"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    connectNulls
-                  />
-                </LineChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-heading">Walking</CardTitle>
-              <CardDescription>Minutes walked per day.</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <ChartContainer config={walkChartConfig} className="h-[200px] w-full aspect-auto">
-                <LineChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" />
-                  <YAxis width={36} tickLine={false} axisLine={false} tickMargin={4} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line
-                    type="monotone"
-                    dataKey="walkingMinutes"
-                    stroke="var(--color-walkingMinutes)"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    connectNulls
-                  />
-                </LineChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-heading">Sleep &amp; exercises</CardTitle>
-              <CardDescription>Sleep quality (stars 1–5) and number of exercises checked.</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <ChartContainer config={sleepExerciseChartConfig} className="h-[220px] w-full aspect-auto">
-                <LineChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" />
-                  <YAxis yAxisId="sleep" domain={[1, 5]} width={28} tickLine={false} axisLine={false} tickMargin={4} />
-                  <YAxis
-                    yAxisId="ex"
-                    orientation="right"
-                    width={28}
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={4}
-                    allowDecimals={false}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line
-                    yAxisId="sleep"
-                    type="monotone"
-                    dataKey="sleepQuality"
-                    stroke="var(--color-sleepQuality)"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    connectNulls
-                  />
-                  <Line
-                    yAxisId="ex"
-                    type="monotone"
-                    dataKey="exerciseCount"
-                    stroke="var(--color-exerciseCount)"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    connectNulls
-                  />
-                </LineChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-heading">Overview</CardTitle>
+            <CardDescription>Avg pain, sleep, sitting &amp; exercise intensity (0–10).</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <ChartContainer config={chartConfig} className="h-[280px] w-full aspect-auto">
+              <LineChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" />
+                <YAxis domain={[0, 10]} width={28} tickLine={false} axisLine={false} tickMargin={4} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="averagePain"       stroke="var(--color-averagePain)"       strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="sleepQuality"      stroke="var(--color-sleepQuality)"      strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="sittingIntensity"  stroke="var(--color-sittingIntensity)"  strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="exerciseIntensity" stroke="var(--color-exerciseIntensity)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+              </LineChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

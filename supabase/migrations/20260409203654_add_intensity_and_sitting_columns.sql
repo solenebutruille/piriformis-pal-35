@@ -1,0 +1,4 @@
+ALTER TABLE public.daily_logs
+  ADD COLUMN IF NOT EXISTS exercise_intensity INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS sitting_intensity INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS max_sitting_minutes INTEGER DEFAULT 0;

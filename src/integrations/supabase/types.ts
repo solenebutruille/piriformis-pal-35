@@ -37,42 +37,54 @@ export type Database = {
       }
       daily_logs: {
         Row: {
+          average_pain: number | null
           created_at: string
           date: string
+          exercise_intensity: number | null
           exercises: string[]
           id: string
           least_pain: number
           max_pain: number
+          max_sitting_minutes: number | null
           notes: string | null
           overall_day_score: number
+          sitting_intensity: number | null
           sleep_quality: number
           updated_at: string
           user_id: string
           walking_minutes: number
         }
         Insert: {
+          average_pain?: number | null
           created_at?: string
           date: string
+          exercise_intensity?: number | null
           exercises?: string[]
           id?: string
           least_pain?: number
           max_pain?: number
+          max_sitting_minutes?: number | null
           notes?: string | null
           overall_day_score?: number
+          sitting_intensity?: number | null
           sleep_quality?: number
           updated_at?: string
           user_id?: string
           walking_minutes?: number
         }
         Update: {
+          average_pain?: number | null
           created_at?: string
           date?: string
+          exercise_intensity?: number | null
           exercises?: string[]
           id?: string
           least_pain?: number
           max_pain?: number
+          max_sitting_minutes?: number | null
           notes?: string | null
           overall_day_score?: number
+          sitting_intensity?: number | null
           sleep_quality?: number
           updated_at?: string
           user_id?: string

@@ -1,0 +1,2 @@
+ALTER TABLE public.daily_logs
+  ADD COLUMN IF NOT EXISTS average_pain INTEGER DEFAULT 0;

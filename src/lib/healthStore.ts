@@ -13,10 +13,13 @@ export interface DailyLog {
   date: string; // YYYY-MM-DD
   maxPain: number; // 0-10
   leastPain: number; // 0-10
+  averagePain: number; // 0-10
   exercises: string[];
   walkingMinutes: number;
-  sleepQuality: number; // 1-5
-  overallDayScore: number; // 1-10 — how the day felt overall
+  maxSittingMinutes: number;
+  sleepQuality: number; // 0-10
+  exerciseIntensity: number; // 0-10
+  sittingIntensity: number; // 0-10
   notes: string; // optional free-text; stored as null when empty
 }
 
@@ -60,10 +63,13 @@ export async function getAllLogs(): Promise<DailyLog[]> {
       date: row.date,
       maxPain: row.max_pain,
       leastPain: Math.min(10, Math.max(0, row.least_pain)),
+      averagePain: row.average_pain ?? 0,
       exercises: row.exercises,
       walkingMinutes: row.walking_minutes,
+      maxSittingMinutes: row.max_sitting_minutes ?? 0,
       sleepQuality: row.sleep_quality,
-      overallDayScore: row.overall_day_score ?? 5,
+      exerciseIntensity: row.exercise_intensity ?? 0,
+      sittingIntensity: row.sitting_intensity ?? 0,
       notes: row.notes ?? "",
     })) ?? []
   );
@@ -85,10 +91,13 @@ export async function getLogForDate(
     date: data.date,
     maxPain: data.max_pain,
     leastPain: Math.min(10, Math.max(0, data.least_pain)),
+    averagePain: data.average_pain ?? 0,
     exercises: data.exercises,
     walkingMinutes: data.walking_minutes,
+    maxSittingMinutes: data.max_sitting_minutes ?? 0,
     sleepQuality: data.sleep_quality,
-    overallDayScore: data.overall_day_score ?? 5,
+    exerciseIntensity: data.exercise_intensity ?? 0,
+    sittingIntensity: data.sitting_intensity ?? 0,
     notes: data.notes ?? "",
   };
 }
@@ -100,10 +109,13 @@ export async function saveLog(log: DailyLog): Promise<void> {
   const fields = {
     max_pain: log.maxPain,
     least_pain: Math.min(10, Math.max(0, log.leastPain)),
+    average_pain: log.averagePain,
     exercises: log.exercises,
     walking_minutes: log.walkingMinutes,
+    max_sitting_minutes: log.maxSittingMinutes,
     sleep_quality: log.sleepQuality,
-    overall_day_score: log.overallDayScore,
+    exercise_intensity: log.exerciseIntensity,
+    sitting_intensity: log.sittingIntensity,
     notes: notesValue,
   };
 

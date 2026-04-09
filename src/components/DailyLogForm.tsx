@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Save, Star, Trophy } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 import {
   DailyLog,
   getAllExercises,
@@ -23,13 +23,6 @@ function painColor(value: number, max: number) {
   return "text-pain-high";
 }
 
-/** 1–10 day score: higher is better (inverse of pain coloring). */
-function overallDayColor(score: number) {
-  const ratio = (score - 1) / 9;
-  if (ratio >= 0.67) return "text-pain-low";
-  if (ratio >= 0.33) return "text-pain-mid";
-  return "text-pain-high";
-}
 
 type DailyLogFormProps = {
   onSaved?: () => void;
@@ -45,12 +38,15 @@ export default function DailyLogForm({ onSaved, forDate, reloadToken }: DailyLog
   const isToday = dateKey === today;
   const [maxPain, setMaxPain] = useState(0);
   const [leastPain, setLeastPain] = useState(0);
+  const [averagePain, setAveragePain] = useState(0);
   const [exercises, setExercises] = useState<string[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
   const [newExercise, setNewExercise] = useState("");
   const [walkingMinutes, setWalkingMinutes] = useState(0);
-  const [sleepQuality, setSleepQuality] = useState(3);
-  const [overallDayScore, setOverallDayScore] = useState(5);
+  const [maxSittingMinutes, setMaxSittingMinutes] = useState(0);
+  const [sleepQuality, setSleepQuality] = useState(0);
+  const [exerciseIntensity, setExerciseIntensity] = useState(0);
+  const [sittingIntensity, setSittingIntensity] = useState(0);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -65,18 +61,24 @@ export default function DailyLogForm({ onSaved, forDate, reloadToken }: DailyLog
       if (existing) {
         setMaxPain(existing.maxPain);
         setLeastPain(existing.leastPain);
+        setAveragePain(existing.averagePain);
         setSelectedExercises(existing.exercises);
         setWalkingMinutes(existing.walkingMinutes);
+        setMaxSittingMinutes(existing.maxSittingMinutes);
         setSleepQuality(existing.sleepQuality);
-        setOverallDayScore(existing.overallDayScore);
+        setExerciseIntensity(existing.exerciseIntensity);
+        setSittingIntensity(existing.sittingIntensity);
         setNotes(existing.notes);
       } else {
         setMaxPain(0);
         setLeastPain(0);
+        setAveragePain(0);
         setSelectedExercises([]);
         setWalkingMinutes(0);
-        setSleepQuality(3);
-        setOverallDayScore(5);
+        setMaxSittingMinutes(0);
+        setSleepQuality(0);
+        setExerciseIntensity(0);
+        setSittingIntensity(0);
         setNotes("");
       }
       setLoading(false);
@@ -107,10 +109,13 @@ export default function DailyLogForm({ onSaved, forDate, reloadToken }: DailyLog
       date: dateKey,
       maxPain,
       leastPain,
+      averagePain,
       exercises: selectedExercises,
       walkingMinutes,
+      maxSittingMinutes,
       sleepQuality,
-      overallDayScore,
+      exerciseIntensity,
+      sittingIntensity,
       notes,
     };
     try {
@@ -122,7 +127,7 @@ export default function DailyLogForm({ onSaved, forDate, reloadToken }: DailyLog
     }
   };
 
-  const sleepLabels = ["Very Poor", "Poor", "Okay", "Good", "Excellent"];
+  const sleepEmoji = ["😫", "😩", "😕", "😟", "😐", "🙂", "😊", "😌", "😴", "🌟"];
 
   if (loading) {
     return (
@@ -132,38 +137,17 @@ export default function DailyLogForm({ onSaved, forDate, reloadToken }: DailyLog
     );
   }
 
+  const formattedDate = new Date(dateKey + "T00:00:00").toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <div className="space-y-5">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-heading flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-primary" />
-            Overall day score
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            {isToday
-              ? "How did today feel overall? (not only pain — mood, energy, life stuff.)"
-              : "How did that day feel overall? (not only pain — mood, energy, life stuff.)"}
-          </p>
-          <div className="flex justify-between mb-2">
-            <span className="text-sm font-medium text-muted-foreground">Score</span>
-            <span className={`text-lg font-bold ${overallDayColor(overallDayScore)}`}>
-              {overallDayScore}/10
-            </span>
-          </div>
-          <Slider
-            value={[overallDayScore]}
-            onValueChange={([v]) => setOverallDayScore(v)}
-            min={1}
-            max={10}
-            step={1}
-            className="w-full"
-          />
-        </CardContent>
-      </Card>
-
+      {isToday && (
+        <p className="text-sm text-muted-foreground text-center">{formattedDate}</p>
+      )}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-heading">Pain Levels</CardTitle>
@@ -183,12 +167,58 @@ export default function DailyLogForm({ onSaved, forDate, reloadToken }: DailyLog
             </div>
             <Slider value={[leastPain]} onValueChange={([v]) => setLeastPain(v)} max={10} step={1} className="w-full" />
           </div>
+          <div>
+            <div className="flex justify-between mb-2">
+              <span className="text-sm font-medium text-muted-foreground">Average pain</span>
+              <span className={`text-lg font-bold ${painColor(averagePain, 10)}`}>{averagePain}/10</span>
+            </div>
+            <Slider value={[averagePain]} onValueChange={([v]) => setAveragePain(v)} max={10} step={1} className="w-full" />
+          </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-heading">Exercises Done</CardTitle>
+          <CardTitle className="text-lg font-heading">Sleep quality</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Last night</span>
+            <span className="text-lg font-bold text-foreground">{sleepQuality}/10 · {sleepEmoji[sleepQuality - 1] ?? "😐"}</span>
+          </div>
+          <Slider value={[sleepQuality]} onValueChange={([v]) => setSleepQuality(v)} min={0} max={10} step={1} className="w-full" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-heading">Exercise intensity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Overall intensity</span>
+            <span className={`text-lg font-bold ${painColor(exerciseIntensity, 10)}`}>{exerciseIntensity}/10</span>
+          </div>
+          <Slider value={[exerciseIntensity]} onValueChange={([v]) => setExerciseIntensity(v)} min={0} max={10} step={1} className="w-full" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-heading">Sitting intensity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Overall sitting load</span>
+            <span className={`text-lg font-bold ${painColor(sittingIntensity, 10)}`}>{sittingIntensity}/10</span>
+          </div>
+          <Slider value={[sittingIntensity]} onValueChange={([v]) => setSittingIntensity(v)} min={0} max={10} step={1} className="w-full" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-heading">Exercises & Activity</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -222,39 +252,27 @@ export default function DailyLogForm({ onSaved, forDate, reloadToken }: DailyLog
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-heading">Activity & Sleep</CardTitle>
+          <CardTitle className="text-lg font-heading">Time walking</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <div className="flex justify-between mb-2">
-              <span className="text-sm font-medium text-muted-foreground">Time walking</span>
-              <span className="text-lg font-bold text-foreground">{walkingMinutes} min</span>
-            </div>
-            <Slider value={[walkingMinutes]} onValueChange={([v]) => setWalkingMinutes(v)} max={180} step={5} className="w-full" />
+        <CardContent>
+          <div className="flex justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Duration</span>
+            <span className="text-lg font-bold text-foreground">{walkingMinutes} min</span>
           </div>
-          <div>
-            <div className="flex justify-between mb-2">
-              <span className="text-sm font-medium text-muted-foreground">Sleep quality</span>
-              <span className="text-sm font-semibold text-foreground">{sleepLabels[sleepQuality - 1]}</span>
-            </div>
-            <div className="flex gap-2 justify-center">
-              {[1, 2, 3, 4, 5].map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setSleepQuality(v)}
-                  className="transition-all duration-150"
-                >
-                  <Star
-                    className={`h-8 w-8 ${
-                      v <= sleepQuality
-                        ? "fill-primary text-primary"
-                        : "text-border"
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
+          <Slider value={[walkingMinutes]} onValueChange={([v]) => setWalkingMinutes(v)} max={180} step={5} className="w-full" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-heading">Max sitting time</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Longest sitting stretch</span>
+            <span className="text-lg font-bold text-foreground">{maxSittingMinutes} min</span>
           </div>
+          <Slider value={[maxSittingMinutes]} onValueChange={([v]) => setMaxSittingMinutes(v)} min={0} max={480} step={5} className="w-full" />
         </CardContent>
       </Card>
 
